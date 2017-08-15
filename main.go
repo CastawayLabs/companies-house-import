@@ -25,7 +25,7 @@ func main() {
 
 	url := "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-" + time.Now().Format("2006-01-02") + ".zip"
 	// specific URL
-	url = "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2017-08-01.zip"
+	// url = "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2017-08-01.zip"
 
 	fmt.Println(url)
 

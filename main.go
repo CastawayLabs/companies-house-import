@@ -21,15 +21,17 @@ func main() {
 	dbPass := flag.String("password", "", "Database password")
 	dbName := flag.String("db", "", "Database name")
 	dbHost := flag.String("host", "", "Database host")
+	url := flag.String("url", "", "Download specific data")
 	flag.Parse()
 
-	url := "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-" + time.Now().Format("2006-01-02") + ".zip"
-	// specific URL
-	// url = "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2017-08-01.zip"
+	if url == nil || len(*url) == 0 {
+		yesterday := time.Now().Add(-time.Hour * 24).Format("2006-01-02")
+		*url = "http://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-" + yesterday + ".zip"
+	}
 
 	fmt.Println(url)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(*url)
 	if err != nil {
 		panic(err)
 	}
@@ -76,6 +78,11 @@ func main() {
 	if _, err := db.Exec("DROP TABLE old_companies"); err != nil {
 		panic(err)
 	}
+
+	db.Exec(`CREATE TABLE IF NOT EXISTS data_import (
+		created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		records int(10) NOT NULL
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8`)
 
 	i := 0
 	dateColumns := []int{13, 14, 17, 18, 20, 21, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 54}
@@ -135,6 +142,10 @@ func main() {
 		if _, err := db.Exec("INSERT INTO companies (CompanyName, CompanyNumber, RegAddress_CareOf, RegAddress_POBox, RegAddress_AddressLine1, RegAddress_AddressLine2, RegAddress_PostTown, RegAddress_County, RegAddress_Country, RegAddress_PostCode, CompanyCategory, CompanyStatus, CountryOfOrigin, DissolutionDate, IncorporationDate, Accounts_AccountRefDay, Accounts_AccountRefMonth, Accounts_NextDueDate, Accounts_LastMadeUpDate, Accounts_AccountCategory, Returns_NextDueDate, Returns_LastMadeUpDate, Mortgages_NumMortCharges, Mortgages_NumMortOutstanding, Mortgages_NumMortPartSatisfied, Mortgages_NumMortSatisfied, SICCode_SicText_1, SICCode_SicText_2, SICCode_SicText_3, SICCode_SicText_4, LimitedPartnerships_NumGenPartners, LimitedPartnerships_NumLimPartners, URI, PreviousName_1_CONDATE, PreviousName_1_CompanyName, PreviousName_2_CONDATE, PreviousName_2_CompanyName, PreviousName_3_CONDATE, PreviousName_3_CompanyName, PreviousName_4_CONDATE, PreviousName_4_CompanyName, PreviousName_5_CONDATE, PreviousName_5_CompanyName, PreviousName_6_CONDATE, PreviousName_6_CompanyName, PreviousName_7_CONDATE, PreviousName_7_CompanyName, PreviousName_8_CONDATE, PreviousName_8_CompanyName, PreviousName_9_CONDATE, PreviousName_9_CompanyName, PreviousName_10_CONDATE, PreviousName_10_CompanyName, ConfStmtNextDueDate, ConfStmtLastMadeUpDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", args...); err != nil {
 			panic(err)
 		}
+	}
+
+	if _, err := db.Exec(`insert into data_import set created=NOW(), records=?`, i); err != nil {
+		panic(err)
 	}
 
 	// cleanup
